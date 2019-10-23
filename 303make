@@ -1,0 +1,123 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from sys import argv, stdout, stderr, exit
+
+# Do not modify this class, his default comportement is necessary for the program
+class   BadArgumentError(Exception):
+    def __init__(self, message, errors = "BadArgumentError"):
+        super().__init__(message)
+        self.errors = errors
+
+# Default object index
+class   Make():
+    """ Definition of Make class """
+    variables = {"$(CFLAGS)": "", "$(CXXFLAGS)": "", "$(LDFLAGS)": "", "$(LDLIBS)": ""}
+    dictionary = {}
+    relations = []
+    elements = []
+    recipes = []
+    rules = {}
+    def __init__(self, argument):
+        """ Initialise Separation's instance and check little errors """
+        self.fd = open(argument[1], "r")
+        self.buff = self.fd.read().rstrip().split('\n')
+        for i in range(len(self.buff)):
+            if "=" in self.buff[i]:
+                self.variables[
+                    "$(" + self.buff[i].split()[0] + ")"] = self.buff[i].split('=')[1].strip("\t ")
+        for variable, value in self.variables.items():
+            for d in range(len(self.buff)):
+                self.buff[d] = self.buff[d].replace(variable, value)
+        for line in self.buff:
+            if "#" in line and line[0] is "#":
+                continue
+            if ":" in line:
+                tmp = line.split(':')
+                target = ' '.join(tmp[0].split())
+                prerequisites = ' '.join(tmp[1].split()).split(' ')
+                if target == "all" or target[0] == '.':
+                    continue
+                self.dictionary[target] = prerequisites
+        ([[[self.elements.append(i[j]) for j in range(len(i))] if type(i) is list
+           else self.elements.append(i) for i in k] for k in self.dictionary.items()])
+        self.elements = sorted(set(self.elements))
+        self.dictionary = {i: self.dictionary[i] for i in sorted(self.dictionary)}
+
+    def computeValue(self, mode):
+        """ Calculate all printable value required by printValue method """
+        ([[self.relations.append([i, key]) if i in value else None
+           for key, value in self.dictionary.items()] for i in self.elements])
+        ([[prerequisites.append(target[1]) if prerequisites[1] == target[0]
+           else None for target in self.relations] for prerequisites in self.relations])
+        if mode == False:
+            tmp = self.recurse(argv[2], [])
+            [self.recurse(i, tmp) for i in tmp]
+            tmp = sorted(set(tmp))
+            try:
+                tmp.remove("all")
+            except ValueError:
+                pass
+            if len(tmp) is 0:
+                raise BadArgumentError("Bad file entered in parameter")
+            self.tmp = tmp
+            recipe = [0, None]
+            for line in self.buff:
+                if ":" in line:
+                    recipe = [1, ' '.join(line.split(':')[0].split())]
+                elif recipe[0] is 1:
+                    self.rules[recipe[1]] = ' '.join(line.split())
+                    recipe = [0, None]
+            [self.recipes.append(self.rules[i]) for i in tmp]
+            self.recipes = sorted(set(self.recipes))
+            if self.variables["$(LDFLAGS)"] is not "":
+                self.variables["$(LDFLAGS)"] = " " + self.variables["$(LDFLAGS)"]
+            if self.variables["$(LDLIBS)"] is not "":
+                self.variables["$(LDLIBS)"] = " " + self.variables["$(LDLIBS)"]
+
+    def printValue(self, mode):
+        """ Print all computed value into the tab """
+        if mode is True:
+            for i in range(len(self.elements)):
+                for d in range(len(self.elements)):
+                    mode = 0
+                    for x in self.relations:
+                        if self.elements[i] == x[1] and self.elements[d] == x[0]:
+                            mode = 1
+                    print(("[" if d is 0 else "") +
+                          str(mode), end="]\n" if d is len(self.elements) - 1 else " ")
+            print(end='\n')
+            for i in self.relations:
+                print(" -> ".join([str(j) for j in i]))
+        else:
+            for i in range(len(self.recipes)):
+                if " -c " in self.recipes[i] and self.variables["$(CFLAGS)"] is not "":
+                    self.recipes[i] = self.recipes[i].replace(
+                        " -c ", " -c " + self.variables["$(CFLAGS)"] + " ")
+                if ((" -o " in self.recipes[i] or " --output " in self.recipes[i])):
+                    self.recipes[i] += self.variables["$(LDFLAGS)"] + self.variables["$(LDLIBS)"]
+                print(self.recipes[i])
+
+    def recurse(self, key, array):
+        """  """
+        for target, prerequisites in self.dictionary.items():
+            if key in prerequisites:
+                array.append(target)
+        return sorted(set(array))
+
+# Do not put more information in this function, it's must be clearer as possible
+def     main():
+    """ Main function who perform program's core action like arguments resolution """
+    if len(argv) is not 2 and len(argv) is not 3:
+        raise BadArgumentError("Usage: ./303make makefile [file]")
+    obj = Make(argv)
+    obj.computeValue(len(argv) is 2)
+    obj.printValue(len(argv) is 2)
+
+# Don't touch at this except if u don't worry of problems
+if __name__ == "__main__":
+    try:
+        main()
+    except BaseException as error:
+        stderr.write(str(type(error).__name__) + ": {}\n".format(error))
+        exit(84)

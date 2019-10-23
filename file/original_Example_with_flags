@@ -1,0 +1,18 @@
+CC	=	gcc
+
+CFLAGS	=	-Wall -Wextra
+LDLIB	=	-lm
+LDFLAGS	=	-L. ./lib/my/libmy.a
+
+NAME	=	tty
+
+all:	$(NAME)
+
+$(NAME):	tty.o fc.o
+$(CC) -o $(NAME) tty.o fc.o
+
+tty.o:	tty.c fc.h
+$(CC) -c tty.c
+
+fc.o:	fc.c fc.h
+$(CC) -c fc.c
